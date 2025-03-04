@@ -39,3 +39,54 @@ Use the interactive Bash script to deploy Microsoft Sentinel via Azure CLI.
    ```bash
    chmod +x setup_sentinel.sh
    ./setup_sentinel.sh
+3 Follow the prompts to input:
+Subscription ID (defaults to current subscription).
+Resource Group Name.
+Azure Region (e.g., eastus).
+Log Analytics Workspace Name.
+Sentinel Instance Name.
+Notes
+The script creates a resource group, Log Analytics workspace, enables Sentinel, and installs Azure Activity and Microsoft Entra ID data connectors with default analytics rules.
+Check the Azure Portal after deployment to verify and configure additional settings.
+
+## Deploy Using Terraform
+Use Terraform to declaratively deploy Microsoft Sentinel infrastructure.
+
+Prerequisites
+Terraform installed (download from terraform.io).
+Azure CLI installed and authenticated (az login).
+Azure provider configured for Terraform.
+Steps
+Navigate to the terraform/ directory in this repository.
+Initialize the Terraform working directory:
+bash
+terraform init
+Create a terraform.tfvars file or set variables interactively:
+hcl
+location              = "eastus"
+resource_group_name   = "SentinelRG"
+workspace_name        = "SentinelWorkspace"
+sentinel_instance_name = "SentinelInstance"
+Plan the deployment to preview changes:
+bash
+terraform plan
+Apply the configuration to deploy resources:
+bash
+terraform apply
+Notes
+Terraform supports basic Sentinel resources (e.g., resource group, Log Analytics workspace, Sentinel onboarding, and some data connectors) via the azurerm provider.
+Advanced features (e.g., analytics rules, complex connectors) may require the azapi provider or PowerShell scripts (see scripts/import_sentinel_rules.ps1 for an example).
+Use the terraform/outputs.tf file to verify deployed resources.
+Additional Information
+ARM Template: Located in arm/template.json. More verbose but fully mature for complex deployments.
+Bicep Template: Located in bicep/main.bicep. Simpler syntax, better Azure integration, ideal for Azure-only deployments.
+Bash Script: Located in scripts/setup_sentinel.sh. Interactive and CLI-based for manual deployment.
+Terraform Configuration: Located in terraform/. Uses IaC for declarative deployment with potential workarounds for advanced Sentinel features.
+CI/CD: A .gitlab-ci.yml file is included for validating templates. Adjust the pipeline as needed for your workflow.
+Prerequisites for All Methods
+An Azure subscription with permissions to create resources (e.g., Contributor role).
+For Bicep, ensure the Bicep CLI or Azure support for Bicep is available.
+For ARM, no additional tools are required beyond Azure CLI or Portal.
+For Terraform, install Terraform and configure the Azure provider.
+Contributing
+Feel free to fork this repository, make improvements (e.g., adding more data connectors, rules, or Terraform enhancements), and submit pull requests
