@@ -11,7 +11,7 @@ Deploy the ARM template to Azure with a single click:
 - Requires an Azure subscription with appropriate permissions.
 - You’ll be prompted to specify or accept default values for `location`, `resourceGroupName`, `workspaceName`, and `sentinelInstanceName`.
 - Use the `arm/parameters.json` file for predefined parameter values if desired.
-- Data connectors supported
+- Data connectors supported for now
 - --Entra ID Protection
 - --Defender XDR
 
