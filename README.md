@@ -19,7 +19,7 @@ Deploy the ARM template to Azure with a single click:
 
 Deploy the Bicep template to Azure with a single click:
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgithub.com%2F/oloruntolaallbert%2Fsentinel-auto%2F-/raw%2Fmain%2Fbicep%2Fmain.bicep)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Foloruntolaallbert%2Fsentinel-auto%2F-/raw%2Fmain%2Fbicep%2Fmain.bicep)
 
 **Notes for Bicep Deployment**:
 - Bicep is compiled to ARM JSON by Azure during deployment.
