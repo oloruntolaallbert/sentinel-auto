@@ -1,0 +1,173 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.34.44.8038",
+      "templateHash": "2250799256192536576"
+    }
+  },
+  "parameters": {
+    "prefix": {
+      "type": "string",
+      "defaultValue": "attack-range",
+      "metadata": {
+        "description": "Prefix for all resources"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "eastus",
+      "metadata": {
+        "description": "Azure region"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {
+        "Environment": "Development",
+        "Project": "SecEng",
+        "Owner": "SecurityTeam",
+        "CostCenter": "IT"
+      },
+      "metadata": {
+        "description": "Resource tags"
+      }
+    }
+  },
+  "variables": {
+    "lawName": "[format('{0}-law', parameters('prefix'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2021-06-01",
+      "name": "[variables('lawName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "sku": {
+          "name": "PerGB2018"
+        },
+        "retentionInDays": 30
+      }
+    },
+    {
+      "type": "Microsoft.OperationsManagement/solutions",
+      "apiVersion": "2015-11-01-preview",
+      "name": "[format('SecurityInsights({0})', variables('lawName'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('lawName'))]"
+      },
+      "plan": {
+        "name": "[format('SecurityInsights({0})', variables('lawName'))]",
+        "publisher": "Microsoft",
+        "product": "OMSGallery/SecurityInsights",
+        "promotionCode": ""
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('lawName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces/providers/onboardingStates",
+      "apiVersion": "2021-03-01-preview",
+      "name": "[format('{0}/Microsoft.SecurityInsights/default', variables('lawName'))]",
+      "location": "[parameters('location')]",
+      "properties": {},
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationsManagement/solutions', format('SecurityInsights({0})', variables('lawName')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces/providers/dataConnectors",
+      "apiVersion": "2021-03-01-preview",
+      "name": "[format('{0}/Microsoft.SecurityInsights/MicrosoftThreatProtection', variables('lawName'))]",
+      "location": "[parameters('location')]",
+      "kind": "MicrosoftThreatProtection",
+      "properties": {
+        "tenantId": "[subscription().tenantId]",
+        "dataTypes": {
+          "incidents": {
+            "state": "enabled"
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', split(format('{0}/Microsoft.SecurityInsights/default', variables('lawName')), '/')[0], split(format('{0}/Microsoft.SecurityInsights/default', variables('lawName')), '/')[1], split(format('{0}/Microsoft.SecurityInsights/default', variables('lawName')), '/')[2])]"
+      ]
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces/providers/dataConnectors",
+      "apiVersion": "2021-03-01-preview",
+      "name": "[format('{0}/Microsoft.SecurityInsights/office-365', variables('lawName'))]",
+      "kind": "Office365",
+      "location": "[parameters('location')]",
+      "properties": {
+        "tenantId": "[subscription().tenantId]",
+        "dataTypes": {
+          "exchange": {
+            "state": "enabled"
+          },
+          "sharePoint": {
+            "state": "enabled"
+          },
+          "teams": {
+            "state": "enabled"
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', split(format('{0}/Microsoft.SecurityInsights/default', variables('lawName')), '/')[0], split(format('{0}/Microsoft.SecurityInsights/default', variables('lawName')), '/')[1], split(format('{0}/Microsoft.SecurityInsights/default', variables('lawName')), '/')[2])]"
+      ]
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces/providers/dataConnectors",
+      "apiVersion": "2021-03-01-preview",
+      "name": "[format('{0}/Microsoft.SecurityInsights/AzureActiveDirectory', variables('lawName'))]",
+      "location": "[parameters('location')]",
+      "kind": "AzureActiveDirectory",
+      "properties": {
+        "tenantId": "[subscription().tenantId]",
+        "dataTypes": {
+          "alerts": {
+            "state": "enabled"
+          },
+          "signin": {
+            "state": "enabled"
+          },
+          "auditLogs": {
+            "state": "enabled"
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', split(format('{0}/Microsoft.SecurityInsights/default', variables('lawName')), '/')[0], split(format('{0}/Microsoft.SecurityInsights/default', variables('lawName')), '/')[1], split(format('{0}/Microsoft.SecurityInsights/default', variables('lawName')), '/')[2])]"
+      ]
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces/dataSources",
+      "apiVersion": "2020-08-01",
+      "name": "[format('{0}/subscription-{1}', variables('lawName'), subscription().subscriptionId)]",
+      "kind": "AzureActivityLog",
+      "properties": {
+        "linkedResourceId": "[format('/subscriptions/{0}/providers/microsoft.insights/eventtypes/management', subscription().subscriptionId)]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('lawName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "sentinelWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Workspace ID for Azure Sentinel"
+      },
+      "value": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', variables('lawName')), '2021-06-01').customerId]"
+    }
+  }
+}
