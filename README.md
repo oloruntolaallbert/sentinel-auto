@@ -58,11 +58,12 @@ Deploy complete Microsoft Sentinel with all OOTB analytics rules:
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Foloruntolaallbert%2Fsentinel-auto%2Fmain%2Fnew%2Fmain.bicep)
 
+
 **What gets deployed:**
 - ✅ Microsoft Sentinel workspace
-- ✅ 9 MSSP data connectors 
+- ✅ 9 data connectors 
 - ✅ 200+ OOTB analytics rules (auto-deployed)
 - ✅ Data Collection Rules for AMA
 - ✅ Complete MSSP configuration
-
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Foloruntolaallbert%2Fsentinel-auto%2Fmain%2Fnew%2Fmain.json)
 **Just enter:** Customer Name + Region = Done!
