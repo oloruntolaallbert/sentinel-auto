@@ -1,3 +1,4 @@
+
 targetScope = 'subscription'
 
 // Parameters - Only what users need to input
@@ -42,14 +43,16 @@ param location string = 'eastus'
 @description('Deploy all OOTB analytics rules automatically')
 param deployAnalyticsRules bool = true
 
+@description('Deployment timestamp')
+param deploymentTime string = utcNow('yyyy-MM-dd')
+
 // Variables
 var resourceGroupName = '${customerName}-sentinel-rg'
 var workspaceName = '${customerName}-sentinel-workspace'
-var deploymentTimestamp = utcNow('yyyy-MM-dd-HH-mm')
 
-// 1. AUTO-REGISTER REQUIRED PROVIDERS
+// 1. AUTO-REGISTER REQUIRED PROVIDERS (Fixed scope)
 resource registerProviders 'Microsoft.Resources/deploymentScripts@2020-10-01' = {
-  name: '${customerName}-register-providers-${deploymentTimestamp}'
+  name: '${customerName}-register-providers'
   location: location
   kind: 'AzurePowerShell'
   identity: {
@@ -117,7 +120,7 @@ resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
     Project: 'MSSP-Sentinel'
     Environment: 'Production'
     ManagedBy: 'MSSP'
-    DeploymentDate: utcNow('yyyy-MM-dd')
+    DeploymentDate: deploymentTime
     AutomationLevel: 'Full'
   }
   dependsOn: [registerProviders]
@@ -131,8 +134,8 @@ module sentinelInfrastructure 'modules/sentinel-infrastructure.bicep' = {
     customerName: customerName
     location: location
     workspaceName: workspaceName
+    deploymentTime: deploymentTime
   }
-  dependsOn: [resourceGroup]
 }
 
 // 4. AUTO-DEPLOY ALL OOTB ANALYTICS RULES
