@@ -5,6 +5,7 @@ targetScope = 'resourceGroup'
 param customerName string
 param location string
 param workspaceName string
+param deploymentTime string
 
 // Variables
 var retentionDays = 90
@@ -15,7 +16,7 @@ var defaultTags = {
   Project: 'MSSP-Sentinel'
   Customer: customerName
   ManagedBy: 'MSSP'
-  DeploymentDate: utcNow('yyyy-MM-dd')
+  DeploymentDate: deploymentTime
 }
 
 // 1. Log Analytics Workspace
