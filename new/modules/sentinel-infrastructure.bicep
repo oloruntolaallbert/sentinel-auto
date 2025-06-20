@@ -1,5 +1,5 @@
 // modules/sentinel-infrastructure.bicep
-// Created by: Albert Timileyin
+// Place this in: /new/modules/sentinel-infrastructure.bicep
 
 targetScope = 'resourceGroup'
 
