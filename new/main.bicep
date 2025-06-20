@@ -97,7 +97,15 @@ resource sentinelContributorRoleAssignment 'Microsoft.Authorization/roleAssignme
     principalId: userAssignedIdentityModule.outputs.principalId
   }
 }
-
+// 4b. ASSIGN LOG ANALYTICS CONTRIBUTOR ROLE TO MANAGED IDENTITY
+resource logAnalyticsContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(subscription().subscriptionId, 'log-analytics-contributor', userAssignedIdentityName)
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '92aaf0da-9dab-42b6-94a3-d43ce8d16293') // Log Analytics Contributor
+    principalType: 'ServicePrincipal'
+    principalId: userAssignedIdentityModule.outputs.principalId
+  }
+}
 // 5. DEPLOY SENTINEL INFRASTRUCTURE
 module sentinelInfrastructure 'modules/sentinel-infrastructure.bicep' = {
   name: '${customerName}-sentinel-infrastructure'
