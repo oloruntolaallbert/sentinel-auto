@@ -1,0 +1,611 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.36.1.42791",
+      "templateHash": "12601871396146768611"
+    }
+  },
+  "parameters": {
+    "customerName": {
+      "type": "string",
+      "metadata": {
+        "description": "Customer name/identifier (e.g., Customer-001)"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "eastus",
+      "allowedValues": [
+        "eastus",
+        "eastus2",
+        "westus",
+        "westus2",
+        "centralus",
+        "northcentralus",
+        "southcentralus",
+        "westcentralus",
+        "canadacentral",
+        "canadaeast",
+        "brazilsouth",
+        "northeurope",
+        "westeurope",
+        "uksouth",
+        "ukwest",
+        "francecentral",
+        "switzerlandnorth",
+        "norwayeast",
+        "germanywestcentral",
+        "southafricanorth",
+        "australiaeast",
+        "australiasoutheast",
+        "eastasia",
+        "southeastasia",
+        "japaneast",
+        "japanwest",
+        "koreacentral",
+        "southindia",
+        "centralindia",
+        "uaenorth"
+      ],
+      "metadata": {
+        "description": "Azure region for deployment"
+      }
+    },
+    "deployAnalyticsRules": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Deploy all OOTB analytics rules automatically"
+      }
+    },
+    "deploymentTime": {
+      "type": "string",
+      "defaultValue": "[utcNow('yyyy-MM-dd')]",
+      "metadata": {
+        "description": "Deployment timestamp"
+      }
+    }
+  },
+  "variables": {
+    "resourceGroupName": "[format('{0}-sentinel-rg', parameters('customerName'))]",
+    "workspaceName": "[format('{0}-sentinel-workspace', parameters('customerName'))]",
+    "userAssignedIdentityName": "[format('{0}-deployment-identity', parameters('customerName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/resourceGroups",
+      "apiVersion": "2021-04-01",
+      "name": "[variables('resourceGroupName')]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "Customer": "[parameters('customerName')]",
+        "Project": "MSSP-Sentinel",
+        "Environment": "Production",
+        "ManagedBy": "MSSP",
+        "Creator": "Albert Timileyin",
+        "DeploymentDate": "[parameters('deploymentTime')]",
+        "AutomationLevel": "Full"
+      }
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "[guid(subscription().subscriptionId, 'contributor', variables('userAssignedIdentityName'))]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
+        "principalType": "ServicePrincipal",
+        "principalId": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}-identity-module', parameters('customerName'))), '2022-09-01').outputs.principalId.value]"
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}-identity-module', parameters('customerName')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "[guid(subscription().subscriptionId, 'sentinel-contributor', variables('userAssignedIdentityName'))]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ab8e14d6-4a74-4a29-9ba8-549422addade')]",
+        "principalType": "ServicePrincipal",
+        "principalId": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}-identity-module', parameters('customerName'))), '2022-09-01').outputs.principalId.value]"
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}-identity-module', parameters('customerName')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('{0}-identity-module', parameters('customerName'))]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "identityName": {
+            "value": "[variables('userAssignedIdentityName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "customerName": {
+            "value": "[parameters('customerName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "18334011544197313144"
+            }
+          },
+          "parameters": {
+            "identityName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "customerName": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+              "apiVersion": "2023-01-31",
+              "name": "[parameters('identityName')]",
+              "location": "[parameters('location')]",
+              "tags": {
+                "Customer": "[parameters('customerName')]",
+                "Project": "MSSP-Sentinel",
+                "Environment": "Production",
+                "ManagedBy": "MSSP",
+                "Purpose": "Deployment-Automation"
+              }
+            }
+          ],
+          "outputs": {
+            "identityId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identityName'))]"
+            },
+            "principalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identityName')), '2023-01-31').principalId]"
+            },
+            "clientId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identityName')), '2023-01-31').clientId]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('{0}-sentinel-infrastructure', parameters('customerName'))]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "customerName": {
+            "value": "[parameters('customerName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "workspaceName": {
+            "value": "[variables('workspaceName')]"
+          },
+          "deploymentTime": {
+            "value": "[parameters('deploymentTime')]"
+          },
+          "userAssignedIdentityId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}-identity-module', parameters('customerName'))), '2022-09-01').outputs.identityId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "11398082420573332863"
+            }
+          },
+          "parameters": {
+            "customerName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "workspaceName": {
+              "type": "string"
+            },
+            "deploymentTime": {
+              "type": "string"
+            },
+            "userAssignedIdentityId": {
+              "type": "string"
+            }
+          },
+          "variables": {
+            "retentionDays": 90,
+            "workspaceSku": "PerGB2018",
+            "defaultTags": {
+              "Environment": "Production",
+              "Project": "MSSP-Sentinel",
+              "Customer": "[parameters('customerName')]",
+              "ManagedBy": "MSSP",
+              "DeploymentDate": "[parameters('deploymentTime')]"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/deploymentScripts",
+              "apiVersion": "2020-10-01",
+              "name": "[format('{0}-register-providers', parameters('customerName'))]",
+              "location": "[parameters('location')]",
+              "kind": "AzurePowerShell",
+              "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                  "[format('{0}', parameters('userAssignedIdentityId'))]": {}
+                }
+              },
+              "properties": {
+                "azPowerShellVersion": "8.0",
+                "timeout": "PT15M",
+                "retentionInterval": "PT1H",
+                "scriptContent": "      Write-Host \"Starting resource provider registration...\"\n      \n      $providers = @(\n          \"Microsoft.Insights\",\n          \"Microsoft.SecurityInsights\", \n          \"Microsoft.OperationalInsights\",\n          \"Microsoft.OperationsManagement\"\n      )\n      \n      foreach ($provider in $providers) {\n          Write-Host \"Registering $provider...\"\n          Register-AzResourceProvider -ProviderNamespace $provider\n      }\n      \n      # Wait for all providers to be registered\n      Write-Host \"Waiting for provider registration to complete...\"\n      $maxWaitTime = 600 # 10 minutes\n      $waitTime = 0\n      \n      do {\n          Start-Sleep -Seconds 30\n          $waitTime += 30\n          \n          $allRegistered = $true\n          foreach ($provider in $providers) {\n              $state = (Get-AzResourceProvider -ProviderNamespace $provider).RegistrationState\n              Write-Host \"$provider : $state\"\n              if ($state -ne \"Registered\") {\n                  $allRegistered = $false\n              }\n          }\n          \n          if ($waitTime -ge $maxWaitTime) {\n              Write-Host \"Timeout waiting for provider registration\"\n              break\n          }\n          \n      } while (-not $allRegistered)\n      \n      if ($allRegistered) {\n          Write-Host \"All resource providers registered successfully!\"\n      } else {\n          Write-Host \"Some providers may still be registering, but continuing deployment...\"\n      }\n    "
+              }
+            },
+            {
+              "type": "Microsoft.OperationalInsights/workspaces",
+              "apiVersion": "2021-06-01",
+              "name": "[parameters('workspaceName')]",
+              "location": "[parameters('location')]",
+              "tags": "[variables('defaultTags')]",
+              "properties": {
+                "sku": {
+                  "name": "[variables('workspaceSku')]"
+                },
+                "retentionInDays": "[variables('retentionDays')]",
+                "features": {
+                  "enableLogAccessUsingOnlyResourcePermissions": true
+                },
+                "publicNetworkAccessForIngestion": "Enabled",
+                "publicNetworkAccessForQuery": "Enabled"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Resources/deploymentScripts', format('{0}-register-providers', parameters('customerName')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.OperationsManagement/solutions",
+              "apiVersion": "2015-11-01-preview",
+              "name": "[format('SecurityInsights({0})', parameters('workspaceName'))]",
+              "location": "[parameters('location')]",
+              "tags": "[variables('defaultTags')]",
+              "properties": {
+                "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+              },
+              "plan": {
+                "name": "[format('SecurityInsights({0})', parameters('workspaceName'))]",
+                "publisher": "Microsoft",
+                "product": "OMSGallery/SecurityInsights",
+                "promotionCode": ""
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.SecurityInsights/onboardingStates",
+              "apiVersion": "2022-10-01-preview",
+              "scope": "[format('Microsoft.OperationalInsights/workspaces/{0}', parameters('workspaceName'))]",
+              "name": "default",
+              "properties": {},
+              "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
+                "[resourceId('Microsoft.OperationsManagement/solutions', format('SecurityInsights({0})', parameters('workspaceName')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.OperationalInsights/workspaces/dataSources",
+              "apiVersion": "2020-08-01",
+              "name": "[format('{0}/{1}', parameters('workspaceName'), 'AzureActivityLogs')]",
+              "kind": "AzureActivityLog",
+              "properties": {
+                "linkedResourceId": "[format('/subscriptions/{0}/providers/microsoft.insights/eventtypes/management', subscription().subscriptionId)]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Insights/dataCollectionRules",
+              "apiVersion": "2022-06-01",
+              "name": "[format('{0}-Syslog-DCR', parameters('customerName'))]",
+              "location": "[parameters('location')]",
+              "tags": "[variables('defaultTags')]",
+              "properties": {
+                "description": "MSSP Syslog Collection via AMA",
+                "dataSources": {
+                  "syslog": [
+                    {
+                      "name": "SyslogData",
+                      "streams": [
+                        "Microsoft-Syslog"
+                      ],
+                      "facilityNames": [
+                        "auth",
+                        "authpriv",
+                        "daemon",
+                        "kern",
+                        "syslog",
+                        "user"
+                      ],
+                      "logLevels": [
+                        "Warning",
+                        "Error",
+                        "Critical",
+                        "Alert",
+                        "Emergency"
+                      ]
+                    }
+                  ]
+                },
+                "destinations": {
+                  "logAnalytics": [
+                    {
+                      "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
+                      "name": "SyslogLA"
+                    }
+                  ]
+                },
+                "dataFlows": [
+                  {
+                    "streams": [
+                      "Microsoft-Syslog"
+                    ],
+                    "destinations": [
+                      "SyslogLA"
+                    ]
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Insights/dataCollectionRules",
+              "apiVersion": "2022-06-01",
+              "name": "[format('{0}-Windows-DCR', parameters('customerName'))]",
+              "location": "[parameters('location')]",
+              "tags": "[variables('defaultTags')]",
+              "properties": {
+                "description": "MSSP Windows Event Collection via AMA",
+                "dataSources": {
+                  "windowsEventLogs": [
+                    {
+                      "name": "System",
+                      "streams": [
+                        "Microsoft-Event"
+                      ],
+                      "xPathQueries": [
+                        "System!*[System[Level=1 or Level=2 or Level=3]]"
+                      ]
+                    },
+                    {
+                      "name": "Application",
+                      "streams": [
+                        "Microsoft-Event"
+                      ],
+                      "xPathQueries": [
+                        "Application!*[System[Level=1 or Level=2 or Level=3]]"
+                      ]
+                    }
+                  ]
+                },
+                "destinations": {
+                  "logAnalytics": [
+                    {
+                      "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
+                      "name": "WindowsEventsLA"
+                    }
+                  ]
+                },
+                "dataFlows": [
+                  {
+                    "streams": [
+                      "Microsoft-Event"
+                    ],
+                    "destinations": [
+                      "WindowsEventsLA"
+                    ]
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "workspaceName": {
+              "type": "string",
+              "value": "[parameters('workspaceName')]"
+            },
+            "workspaceId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName')), '2021-06-01').customerId]"
+            },
+            "workspaceResourceId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+            },
+            "syslogDCRId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Insights/dataCollectionRules', format('{0}-Syslog-DCR', parameters('customerName')))]"
+            },
+            "windowsDCRId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Insights/dataCollectionRules', format('{0}-Windows-DCR', parameters('customerName')))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Authorization/roleAssignments', guid(subscription().subscriptionId, 'contributor', variables('userAssignedIdentityName')))]",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}-identity-module', parameters('customerName')))]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployAnalyticsRules')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('{0}-analytics-rules', parameters('customerName'))]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "workspaceName": {
+            "value": "[variables('workspaceName')]"
+          },
+          "customerName": {
+            "value": "[parameters('customerName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "userAssignedIdentityId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}-identity-module', parameters('customerName'))), '2022-09-01').outputs.identityId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.1.42791",
+              "templateHash": "17385522313446021666"
+            }
+          },
+          "parameters": {
+            "workspaceName": {
+              "type": "string"
+            },
+            "customerName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "userAssignedIdentityId": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/deploymentScripts",
+              "apiVersion": "2020-10-01",
+              "name": "[format('{0}-auto-deploy-ootb-rules', parameters('customerName'))]",
+              "location": "[parameters('location')]",
+              "kind": "AzurePowerShell",
+              "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                  "[format('{0}', parameters('userAssignedIdentityId'))]": {}
+                }
+              },
+              "properties": {
+                "azPowerShellVersion": "8.0",
+                "timeout": "PT45M",
+                "retentionInterval": "PT2H",
+                "environmentVariables": [
+                  {
+                    "name": "WORKSPACE_NAME",
+                    "value": "[parameters('workspaceName')]"
+                  },
+                  {
+                    "name": "RESOURCE_GROUP",
+                    "value": "[resourceGroup().name]"
+                  },
+                  {
+                    "name": "SUBSCRIPTION_ID",
+                    "value": "[subscription().subscriptionId]"
+                  },
+                  {
+                    "name": "CUSTOMER_NAME",
+                    "value": "[parameters('customerName')]"
+                  }
+                ],
+                "scriptContent": "      Write-Host \"==========================================\"\n      Write-Host \"AUTOMATED OOTB ANALYTICS RULES DEPLOYMENT\"\n      Write-Host \"==========================================\"\n      \n      $subscriptionId = $env:SUBSCRIPTION_ID\n      $resourceGroupName = $env:RESOURCE_GROUP\n      $workspaceName = $env:WORKSPACE_NAME\n      $customerName = $env:CUSTOMER_NAME\n      \n      # Enhanced error handling function\n      function Handle-Error {\n          param($ErrorMessage, $IsCritical = $false)\n          Write-Host \"ERROR: $ErrorMessage\" -ForegroundColor Red\n          if ($IsCritical) {\n              Write-Host \"Critical error encountered. Exiting deployment.\" -ForegroundColor Red\n              exit 1\n          }\n      }\n      \n      # Wait for permissions to propagate\n      Write-Host \"Waiting for permissions to propagate...\"\n      Start-Sleep -Seconds 60\n      \n      # Connect and set context\n      try {\n          Write-Host \"Setting up Azure context...\"\n          Set-AzContext -SubscriptionId $subscriptionId -ErrorAction Stop\n      } catch {\n          Handle-Error \"Failed to set Azure context: $($_.Exception.Message)\" $true\n      }\n      \n      # Get access token using the simplified method for managed identity\n      $maxRetries = 3\n      $retryCount = 0\n      $token = $null\n      \n      while ($retryCount -lt $maxRetries -and -not $token) {\n          try {\n              # Simplified token acquisition for managed identity\n              $context = Get-AzContext\n              $token = (Get-AzAccessToken -ResourceUrl $context.Environment.ResourceManagerUrl).Token\n              \n              if ($token) {\n                  Write-Host \"Successfully acquired access token\" -ForegroundColor Green\n              }\n          } catch {\n              $retryCount++\n              if ($retryCount -ge $maxRetries) {\n                  Handle-Error \"Failed to get access token after $maxRetries attempts: $($_.Exception.Message)\" $true\n              }\n              Write-Host \"Retrying token acquisition ($retryCount/$maxRetries)...\"\n              Start-Sleep -Seconds 5\n          }\n      }\n      \n      $headers = @{\n          'Authorization' = \"Bearer $token\"\n          'Content-Type' = 'application/json'\n      }\n      \n      # MSSP Standard Connectors - Enhanced list\n      $msspConnectors = @(\n          \"AzureActivity\",\n          \"AzureActiveDirectory\", \n          \"SecurityEvents\",\n          \"Syslog\",\n          \"MicrosoftThreatProtection\",\n          \"AzureActiveDirectoryIdentityProtection\",\n          \"ThreatIntelligence\",\n          \"Office365\",\n          \"MicrosoftDefenderThreatIntelligence\",\n          \"MicrosoftCloudAppSecurity\",\n          \"AzureSecurityCenter\",\n          \"MicrosoftDefenderAdvancedThreatProtection\"\n      )\n      \n      Write-Host \"MSSP Standard Connectors: $($msspConnectors -join ', ')\"\n      \n      # Function to get all OOTB templates with retry\n      function Get-OOTBTemplates {\n          $templatesUri = \"$($context.Environment.ResourceManagerUrl)subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.OperationalInsights/workspaces/$workspaceName/providers/Microsoft.SecurityInsights/alertRuleTemplates?api-version=2022-10-01-preview\"\n          \n          $maxRetries = 3\n          $retryCount = 0\n          \n          while ($retryCount -lt $maxRetries) {\n              try {\n                  Write-Host \"Fetching OOTB rule templates (attempt $($retryCount + 1))...\"\n                  $response = Invoke-RestMethod -Uri $templatesUri -Headers $headers -Method Get -ErrorAction Stop\n                  Write-Host \"Found $($response.value.Count) total templates\" -ForegroundColor Green\n                  return $response.value\n              } catch {\n                  $retryCount++\n                  if ($retryCount -ge $maxRetries) {\n                      Handle-Error \"Failed to fetch templates after $maxRetries attempts: $($_.Exception.Message)\" $true\n                  }\n                  Write-Host \"Retrying template fetch...\"\n                  Start-Sleep -Seconds 5\n              }\n          }\n      }\n      \n      # Function to check if rule should be deployed\n      function Should-DeployRule {\n          param($template)\n          \n          # Only deploy Scheduled and NRT rules\n          if ($template.kind -ne \"Scheduled\" -and $template.kind -ne \"NRT\") {\n              return $false\n          }\n          \n          # Skip if no query\n          if (-not $template.properties.query -or $template.properties.query.Trim() -eq \"\") {\n              return $false\n          }\n          \n          # Check connector requirements\n          if ($template.properties.requiredDataConnectors -and $template.properties.requiredDataConnectors.Count -gt 0) {\n              foreach ($connector in $template.properties.requiredDataConnectors) {\n                  if ($connector.connectorId -in $msspConnectors) {\n                      return $true\n                  }\n              }\n              return $false\n          } else {\n              # Deploy generic rules without specific requirements\n              return $true\n          }\n      }\n      \n      # Function to deploy a single rule with enhanced error handling\n      function Deploy-AnalyticsRule {\n          param($template, $retryOnFailure = $true)\n          \n          $ruleName = [System.Guid]::NewGuid().ToString()\n          \n          # Build rule body with validation\n          $ruleBody = @{\n              kind = $template.kind\n              properties = @{\n                  displayName = $template.properties.displayName\n                  description = if ($template.properties.description) { $template.properties.description } else { \"MSSP Auto-deployed rule\" }\n                  severity = if ($template.properties.severity) { $template.properties.severity } else { \"Medium\" }\n                  enabled = $true\n                  query = $template.properties.query\n                  queryFrequency = $template.properties.queryFrequency\n                  queryPeriod = $template.properties.queryPeriod\n                  triggerOperator = $template.properties.triggerOperator\n                  triggerThreshold = $template.properties.triggerThreshold\n                  suppressionDuration = if ($template.properties.suppressionDuration) { $template.properties.suppressionDuration } else { \"PT5H\" }\n                  suppressionEnabled = if ($null -ne $template.properties.suppressionEnabled) { $template.properties.suppressionEnabled } else { $false }\n                  alertRuleTemplateName = $template.name\n                  templateVersion = if ($template.properties.version) { $template.properties.version } else { \"1.0.0\" }\n              }\n          }\n          \n          # Add optional properties safely\n          if ($template.properties.entityMappings -and $template.properties.entityMappings.Count -gt 0) {\n              $ruleBody.properties.entityMappings = $template.properties.entityMappings\n          }\n          if ($template.properties.tactics -and $template.properties.tactics.Count -gt 0) {\n              $ruleBody.properties.tactics = $template.properties.tactics\n          }\n          if ($template.properties.techniques -and $template.properties.techniques.Count -gt 0) {\n              $ruleBody.properties.techniques = $template.properties.techniques\n          }\n          if ($template.properties.customDetails) {\n              $ruleBody.properties.customDetails = $template.properties.customDetails\n          }\n          if ($template.properties.alertDetailsOverride) {\n              $ruleBody.properties.alertDetailsOverride = $template.properties.alertDetailsOverride\n          }\n          if ($template.properties.eventGroupingSettings) {\n              $ruleBody.properties.eventGroupingSettings = $template.properties.eventGroupingSettings\n          }\n          \n          $createRuleUri = \"$($context.Environment.ResourceManagerUrl)subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.OperationalInsights/workspaces/$workspaceName/providers/Microsoft.SecurityInsights/alertRules/$ruleName\" + \"?api-version=2022-10-01-preview\"\n          \n          $maxRetries = if ($retryOnFailure) { 2 } else { 1 }\n          $retryCount = 0\n          \n          while ($retryCount -lt $maxRetries) {\n              try {\n                  $response = Invoke-RestMethod -Uri $createRuleUri -Headers $headers -Method Put -Body ($ruleBody | ConvertTo-Json -Depth 15) -ErrorAction Stop\n                  Write-Host \"✓ SUCCESS: $($template.properties.displayName)\" -ForegroundColor Green\n                  return $true\n              } catch {\n                  $retryCount++\n                  $errorMessage = $_.Exception.Message\n                  \n                  # Check for specific errors\n                  if ($errorMessage -match \"BadRequest\" -or $errorMessage -match \"InvalidTemplate\") {\n                      Write-Host \"✗ SKIPPED (Invalid): $($template.properties.displayName)\" -ForegroundColor Yellow\n                      return $false\n                  }\n                  \n                  if ($retryCount -ge $maxRetries) {\n                      Write-Host \"✗ FAILED: $($template.properties.displayName) - $errorMessage\" -ForegroundColor Red\n                      return $false\n                  }\n                  \n                  Write-Host \"Retrying rule deployment for: $($template.properties.displayName)\"\n                  Start-Sleep -Seconds 2\n              }\n          }\n          \n          return $false\n      }\n      \n      # MAIN DEPLOYMENT PROCESS\n      Write-Host \"`nStarting automated OOTB rules deployment for customer: $customerName\"\n      Write-Host \"Target workspace: $workspaceName\"\n      \n      # Get all templates\n      $allTemplates = Get-OOTBTemplates\n      if ($allTemplates.Count -eq 0) {\n          Handle-Error \"No templates found. Exiting.\" $true\n      }\n      \n      # Filter templates for MSSP connectors\n      Write-Host \"`nFiltering templates for MSSP connectors...\"\n      $filteredTemplates = @()\n      $skippedReasons = @{\n          \"WrongKind\" = 0\n          \"NoConnectorMatch\" = 0\n          \"NoQuery\" = 0\n      }\n      \n      foreach ($template in $allTemplates) {\n          if ($template.kind -ne \"Scheduled\" -and $template.kind -ne \"NRT\") {\n              $skippedReasons[\"WrongKind\"]++\n          } elseif (-not $template.properties.query -or $template.properties.query.Trim() -eq \"\") {\n              $skippedReasons[\"NoQuery\"]++\n          } elseif (Should-DeployRule -template $template) {\n              $filteredTemplates += $template\n          } else {\n              $skippedReasons[\"NoConnectorMatch\"]++\n          }\n      }\n      \n      Write-Host \"`nTemplate Analysis:\"\n      Write-Host \"- Total templates: $($allTemplates.Count)\"\n      Write-Host \"- MSSP-relevant: $($filteredTemplates.Count)\"\n      Write-Host \"- Skipped (wrong kind): $($skippedReasons['WrongKind'])\"\n      Write-Host \"- Skipped (no query): $($skippedReasons['NoQuery'])\"\n      Write-Host \"- Skipped (connector mismatch): $($skippedReasons['NoConnectorMatch'])\"\n      \n      if ($filteredTemplates.Count -eq 0) {\n          Handle-Error \"No templates match MSSP connector requirements\" $true\n      }\n      \n      # Deploy rules in batches with progress tracking\n      $deployedCount = 0\n      $failedCount = 0\n      $skippedCount = 0\n      $batchSize = 10\n      $totalBatches = [Math]::Ceiling($filteredTemplates.Count / $batchSize)\n      \n      # Track deployment details\n      $deploymentResults = @{\n          \"Successful\" = @()\n          \"Failed\" = @()\n          \"Skipped\" = @()\n      }\n      \n      for ($batch = 0; $batch -lt $totalBatches; $batch++) {\n          $startIndex = $batch * $batchSize\n          $endIndex = [Math]::Min(($batch + 1) * $batchSize - 1, $filteredTemplates.Count - 1)\n          \n          Write-Host \"`n--- BATCH $($batch + 1)/$totalBatches (Rules $($startIndex + 1)-$($endIndex + 1)) ---\"\n          $batchProgress = 0\n          \n          for ($i = $startIndex; $i -le $endIndex; $i++) {\n              $template = $filteredTemplates[$i]\n              $batchProgress++\n              \n              Write-Host \"[$batchProgress/$($endIndex - $startIndex + 1)] Deploying: $($template.properties.displayName)\"\n              \n              $result = Deploy-AnalyticsRule -template $template\n              \n              if ($result -eq $true) {\n                  $deployedCount++\n                  $deploymentResults[\"Successful\"] += $template.properties.displayName\n              } elseif ($result -eq $false) {\n                  $failedCount++\n                  $deploymentResults[\"Failed\"] += $template.properties.displayName\n              } else {\n                  $skippedCount++\n                  $deploymentResults[\"Skipped\"] += $template.properties.displayName\n              }\n              \n              # Rate limiting\n              Start-Sleep -Milliseconds 500\n          }\n          \n          # Progress update\n          $totalProgress = [Math]::Round((($deployedCount + $failedCount + $skippedCount) / $filteredTemplates.Count) * 100, 1)\n          Write-Host \"`nProgress: $totalProgress% complete ($($deployedCount + $failedCount + $skippedCount)/$($filteredTemplates.Count) rules processed)\"\n          \n          # Longer pause between batches\n          if ($batch -lt $totalBatches - 1) {\n              Write-Host \"Pausing 5 seconds before next batch...\"\n              Start-Sleep -Seconds 5\n          }\n      }\n      \n      # FINAL SUMMARY\n      Write-Host \"`n==========================================\"\n      Write-Host \"DEPLOYMENT COMPLETED!\"\n      Write-Host \"==========================================\"\n      Write-Host \"Customer: $customerName\" -ForegroundColor Cyan\n      Write-Host \"Workspace: $workspaceName\" -ForegroundColor Cyan\n      Write-Host \"`nDeployment Statistics:\"\n      Write-Host \"- Total Templates Found: $($allTemplates.Count)\"\n      Write-Host \"- MSSP-Relevant Templates: $($filteredTemplates.Count)\"\n      Write-Host \"- Successfully Deployed: $deployedCount\" -ForegroundColor Green\n      Write-Host \"- Failed Deployments: $failedCount\" -ForegroundColor Red\n      Write-Host \"- Skipped (Invalid): $skippedCount\" -ForegroundColor Yellow\n      Write-Host \"- Success Rate: $([Math]::Round(($deployedCount / $filteredTemplates.Count) * 100, 1))%\"\n      \n      # Show sample of deployed rules\n      if ($deploymentResults[\"Successful\"].Count -gt 0) {\n          Write-Host \"`nSample of deployed rules:\" -ForegroundColor Green\n          $deploymentResults[\"Successful\"] | Select-Object -First 5 | ForEach-Object {\n              Write-Host \"  ✓ $_\" -ForegroundColor Green\n          }\n          if ($deploymentResults[\"Successful\"].Count -gt 5) {\n              Write-Host \"  ... and $($deploymentResults[\"Successful\"].Count - 5) more\" -ForegroundColor Green\n          }\n      }\n      \n      Write-Host \"==========================================\"\n      \n      # Exit code based on results\n      if ($deployedCount -eq 0) {\n          Handle-Error \"No rules were successfully deployed\" $true\n      } elseif ($deployedCount -lt ($filteredTemplates.Count * 0.5)) {\n          Write-Host \"WARNING: Less than 50% of rules deployed successfully\" -ForegroundColor Yellow\n          Write-Host \"Check Azure Sentinel portal for details\" -ForegroundColor Yellow\n      } else {\n          Write-Host \"`n✓ OOTB Analytics Rules deployment completed successfully!\" -ForegroundColor Green\n          Write-Host \"Navigate to Sentinel Analytics to review deployed rules\" -ForegroundColor Green\n      }\n      \n      # Output deployment metrics for logging\n      $output = @{\n          deployedCount = $deployedCount\n          failedCount = $failedCount\n          skippedCount = $skippedCount\n          totalTemplates = $allTemplates.Count\n          msspTemplates = $filteredTemplates.Count\n          successRate = [Math]::Round(($deployedCount / $filteredTemplates.Count) * 100, 1)\n      }\n      \n      Write-Output ($output | ConvertTo-Json)\n    "
+              }
+            }
+          ],
+          "outputs": {
+            "rulesDeploymentResult": {
+              "type": "object",
+              "value": {
+                "deploymentName": "[format('{0}-auto-deploy-ootb-rules', parameters('customerName'))]",
+                "status": "Completed",
+                "automationType": "Full OOTB Deployment",
+                "targetWorkspace": "[parameters('workspaceName')]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]",
+        "[subscriptionResourceId('Microsoft.Authorization/roleAssignments', guid(subscription().subscriptionId, 'sentinel-contributor', variables('userAssignedIdentityName')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}-sentinel-infrastructure', parameters('customerName')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}-identity-module', parameters('customerName')))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "deploymentSummary": {
+      "type": "object",
+      "value": {
+        "customer": "[parameters('customerName')]",
+        "resourceGroup": "[variables('resourceGroupName')]",
+        "workspace": "[variables('workspaceName')]",
+        "location": "[parameters('location')]",
+        "infrastructureDeployed": true,
+        "analyticsRulesDeployed": "[parameters('deployAnalyticsRules')]",
+        "estimatedRulesCount": "[if(parameters('deployAnalyticsRules'), '200+', '0')]",
+        "sentinelPortalUrl": "[format('https://portal.azure.com/#@{0}/blade/Microsoft_Azure_Security_Insights/MainMenuBlade/0/subscriptions/{1}/resourceGroups/{2}/providers/Microsoft.OperationalInsights/workspaces/{3}', tenant().tenantId, subscription().subscriptionId, variables('resourceGroupName'), variables('workspaceName'))]",
+        "automationLevel": "FULL",
+        "deploymentComplete": true,
+        "nextSteps": "[if(parameters('deployAnalyticsRules'), createArray('Review deployed analytics rules in Sentinel portal', 'Associate Data Collection Rules with VMs', 'Configure threat intelligence feeds', 'Set up incident assignment rules'), createArray('Navigate to Sentinel Analytics Rules to enable OOTB rules', 'Associate Data Collection Rules with VMs', 'Configure threat intelligence feeds'))]"
+      }
+    }
+  }
+}
