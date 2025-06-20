@@ -3,13 +3,13 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "customerName": {
-      "value": "Customer-001"
+      "value": "Albert-Test-001"
     },
     "location": {
       "value": "eastus"
     },
-    "deployAnalyticsRules": {
-      "value": true
+    "deploymentTime": {
+      "value": "[utcNow('yyyy-MM-dd')]"
     }
   }
 }
