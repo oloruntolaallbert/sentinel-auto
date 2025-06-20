@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.1.42791",
-      "templateHash": "5251629362826950078"
+      "templateHash": "13658588885303212668"
     }
   },
   "parameters": {
@@ -227,7 +227,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.1.42791",
-              "templateHash": "10218549296408701082"
+              "templateHash": "11024293860812466505"
             }
           },
           "parameters": {
@@ -319,6 +319,25 @@
               ]
             },
             {
+              "type": "Microsoft.OperationsManagement/solutions",
+              "apiVersion": "2015-11-01-preview",
+              "name": "[format('Security({0})', parameters('workspaceName'))]",
+              "location": "[parameters('location')]",
+              "tags": "[variables('defaultTags')]",
+              "properties": {
+                "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+              },
+              "plan": {
+                "name": "[format('Security({0})', parameters('workspaceName'))]",
+                "publisher": "Microsoft",
+                "product": "OMSGallery/Security",
+                "promotionCode": ""
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+              ]
+            },
+            {
               "type": "Microsoft.SecurityInsights/onboardingStates",
               "apiVersion": "2022-10-01-preview",
               "scope": "[format('Microsoft.OperationalInsights/workspaces/{0}', parameters('workspaceName'))]",
@@ -347,44 +366,6 @@
               "scope": "[format('Microsoft.OperationalInsights/workspaces/{0}', parameters('workspaceName'))]",
               "name": "AzureActiveDirectory",
               "kind": "AzureActiveDirectory",
-              "properties": {
-                "tenantId": "[subscription().tenantId]",
-                "dataTypes": {
-                  "alerts": {
-                    "state": "enabled"
-                  }
-                }
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
-                "[extensionResourceId(resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName')), 'Microsoft.SecurityInsights/onboardingStates', 'default')]"
-              ]
-            },
-            {
-              "type": "Microsoft.SecurityInsights/dataConnectors",
-              "apiVersion": "2022-10-01-preview",
-              "scope": "[format('Microsoft.OperationalInsights/workspaces/{0}', parameters('workspaceName'))]",
-              "name": "MicrosoftThreatProtection",
-              "kind": "MicrosoftThreatProtection",
-              "properties": {
-                "tenantId": "[subscription().tenantId]",
-                "dataTypes": {
-                  "incidents": {
-                    "state": "enabled"
-                  }
-                }
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
-                "[extensionResourceId(resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName')), 'Microsoft.SecurityInsights/onboardingStates', 'default')]"
-              ]
-            },
-            {
-              "type": "Microsoft.SecurityInsights/dataConnectors",
-              "apiVersion": "2022-10-01-preview",
-              "scope": "[format('Microsoft.OperationalInsights/workspaces/{0}', parameters('workspaceName'))]",
-              "name": "AADIdentityProtection",
-              "kind": "AzureAdvancedThreatProtection",
               "properties": {
                 "tenantId": "[subscription().tenantId]",
                 "dataTypes": {
@@ -451,7 +432,8 @@
                 "plan": "Analytics"
               },
               "dependsOn": [
-                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
+                "[resourceId('Microsoft.OperationsManagement/solutions', format('Security({0})', parameters('workspaceName')))]"
               ]
             },
             {
