@@ -224,3 +224,4 @@ output workspaceId string = logAnalyticsWorkspace.properties.customerId
 output workspaceResourceId string = logAnalyticsWorkspace.id
 output syslogDCRId string = basicSyslogDCR.id
 output windowsDCRId string = basicWindowsDCR.id
+output sentinelOnboardingComplete bool = true
