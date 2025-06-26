@@ -42,6 +42,10 @@
       "apiVersion": "2022-10-01",
       "name": "[parameters('workspaceName')]",
       "location": "[parameters('location')]",
+      "tags": {
+        "team": "Automation",
+        "creator": "Albert"
+      },
       "properties": {
         "sku": {
           "name": "PerGB2018"
@@ -60,6 +64,10 @@
       "apiVersion": "2015-11-01-preview",
       "name": "[variables('sentinelSolutionName')]",
       "location": "[parameters('location')]",
+      "tags": {
+        "team": "Automation",
+        "creator": "Albert"
+      },
       "dependsOn": [
         "[variables('workspaceResourceId')]"
       ],
@@ -77,6 +85,10 @@
       "type": "Microsoft.OperationalInsights/workspaces/providers/onboardingStates",
       "apiVersion": "2022-09-01-preview",
       "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/default')]",
+      "tags": {
+        "team": "Automation",
+        "creator": "Albert"
+      },
       "dependsOn": [
         "[resourceId('Microsoft.OperationsManagement/solutions', variables('sentinelSolutionName'))]"
       ],
@@ -88,6 +100,10 @@
       "apiVersion": "2023-02-01-preview",
       "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', guid('M365Defender', parameters('workspaceName')))]",
       "location": "[parameters('location')]",
+      "tags": {
+        "team": "Automation",
+        "creator": "Albert"
+      },
       "kind": "MicrosoftThreatProtection",
       "dependsOn": [
         "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'default')]"
@@ -110,6 +126,10 @@
       "apiVersion": "2023-02-01-preview",
       "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', guid('AADIdentityProtection', parameters('workspaceName')))]",
       "location": "[parameters('location')]",
+      "tags": {
+        "team": "Automation",
+        "creator": "Albert"
+      },
       "kind": "AzureActiveDirectory",
       "dependsOn": [
         "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'default')]"
@@ -129,6 +149,10 @@
       "apiVersion": "2023-02-01-preview",
       "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', guid('Office365', parameters('workspaceName')))]",
       "location": "[parameters('location')]",
+      "tags": {
+        "team": "Automation",
+        "creator": "Albert"
+      },
       "kind": "Office365",
       "dependsOn": [
         "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'default')]"
@@ -154,6 +178,10 @@
       "apiVersion": "2023-02-01-preview",
       "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', guid('DefenderForCloud', parameters('workspaceName')))]",
       "location": "[parameters('location')]",
+      "tags": {
+        "team": "Automation",
+        "creator": "Albert"
+      },
       "kind": "AzureSecurityCenter",
       "dependsOn": [
         "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'default')]"
@@ -173,6 +201,10 @@
       "apiVersion": "2023-02-01-preview",
       "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', guid('IoTSecurity', parameters('workspaceName')))]",
       "location": "[parameters('location')]",
+      "tags": {
+        "team": "Automation",
+        "creator": "Albert"
+      },
       "kind": "IOT",
       "dependsOn": [
         "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'default')]"
@@ -192,6 +224,10 @@
       "apiVersion": "2023-02-01-preview",
       "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', guid('ThreatIntelligence', parameters('workspaceName')))]",
       "location": "[parameters('location')]",
+      "tags": {
+        "team": "Automation",
+        "creator": "Albert"
+      },
       "kind": "ThreatIntelligence",
       "dependsOn": [
         "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'default')]"
@@ -211,6 +247,10 @@
       "apiVersion": "2023-02-01-preview",
       "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', guid('OfficeIRM', parameters('workspaceName')))]",
       "location": "[parameters('location')]",
+      "tags": {
+        "team": "Automation",
+        "creator": "Albert"
+      },
       "kind": "OfficeIRM",
       "dependsOn": [
         "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'default')]"
@@ -225,30 +265,15 @@
       }
     },
     {
-      "comments": "Microsoft Power BI",
-      "type": "Microsoft.OperationalInsights/workspaces/providers/dataConnectors",
-      "apiVersion": "2023-02-01-preview",
-      "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', guid('OfficePowerBI', parameters('workspaceName')))]",
-      "location": "[parameters('location')]",
-      "kind": "OfficePowerBI",
-      "dependsOn": [
-        "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'default')]"
-      ],
-      "properties": {
-        "tenantId": "[subscription().tenantId]",
-        "dataTypes": {
-          "logs": {
-            "state": "enabled"
-          }
-        }
-      }
-    },
-    {
       "comments": "Azure Activity Logs",
       "type": "Microsoft.OperationalInsights/workspaces/dataSources",
       "apiVersion": "2020-08-01",
       "name": "[concat(parameters('workspaceName'), '/AzureActivity')]",
       "kind": "AzureActivityLog",
+      "tags": {
+        "team": "Automation",
+        "creator": "Albert"
+      },
       "dependsOn": [
         "[variables('workspaceResourceId')]"
       ],
@@ -262,6 +287,10 @@
       "apiVersion": "2020-08-01",
       "name": "[concat(parameters('workspaceName'), '/SecurityInsightsSecurityEventCollectionConfiguration')]",
       "kind": "SecurityInsightsSecurityEventCollectionConfiguration",
+      "tags": {
+        "team": "Automation",
+        "creator": "Albert"
+      },
       "dependsOn": [
         "[variables('workspaceResourceId')]"
       ],
@@ -276,6 +305,10 @@
       "apiVersion": "2023-02-01-preview",
       "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/EntityAnalytics')]",
       "kind": "EntityAnalytics",
+      "tags": {
+        "team": "Automation",
+        "creator": "Albert"
+      },
       "dependsOn": [
         "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'default')]"
       ],
@@ -291,6 +324,10 @@
       "apiVersion": "2023-02-01-preview",
       "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/Ueba')]",
       "kind": "Ueba",
+      "tags": {
+        "team": "Automation",
+        "creator": "Albert"
+      },
       "dependsOn": [
         "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'default')]",
         "[resourceId('Microsoft.OperationalInsights/workspaces/providers/settings', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'EntityAnalytics')]"
@@ -298,7 +335,7 @@
       "properties": {
         "dataSources": [
           "AuditLogs",
-          "AzureActivity", 
+          "AzureActivity",
           "SecurityEvent",
           "SigninLogs"
         ]
@@ -328,7 +365,6 @@
         "Microsoft Defender for IoT",
         "Threat Intelligence Platforms",
         "Microsoft Insider Risk Management",
-        "Microsoft Power BI",
         "Azure Activity Logs",
         "Security Events (Windows)"
       ]
