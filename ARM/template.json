@@ -2,64 +2,72 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "prefix": {
+    "workspaceName": {
       "type": "string",
-      "defaultValue": "attack-range",
       "metadata": {
-        "description": "Prefix for all resources"
+        "description": "Name for the Log Analytics workspace used to store Sentinel data"
       }
     },
     "location": {
       "type": "string",
-      "defaultValue": "eastus",
+      "defaultValue": "[resourceGroup().location]",
       "metadata": {
-        "description": "Azure region"
+        "description": "Location for all resources"
       }
     },
-    "tags": {
-      "type": "object",
-      "defaultValue": {
-        "Environment": "Development",
-        "Project": "SecEng",
-        "Owner": "SecurityTeam",
-        "CostCenter": "IT"
-      },
+    "retentionInDays": {
+      "type": "int",
+      "defaultValue": 90,
+      "minValue": 30,
+      "maxValue": 730,
       "metadata": {
-        "description": "Resource tags"
+        "description": "Retention period for the Log Analytics workspace"
+      }
+    },
+    "dailyQuotaGb": {
+      "type": "int",
+      "defaultValue": -1,
+      "metadata": {
+        "description": "Daily ingestion quota in GB (-1 for unlimited)"
       }
     }
   },
   "variables": {
-    "lawName": "[concat(parameters('prefix'), '-law')]"
+    "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
+    "sentinelSolutionName": "[concat('SecurityInsights', '(', parameters('workspaceName'), ')')]"
   },
   "resources": [
     {
       "type": "Microsoft.OperationalInsights/workspaces",
-      "apiVersion": "2021-06-01",
-      "name": "[variables('lawName')]",
+      "apiVersion": "2022-10-01",
+      "name": "[parameters('workspaceName')]",
       "location": "[parameters('location')]",
-      "tags": "[parameters('tags')]",
       "properties": {
         "sku": {
           "name": "PerGB2018"
         },
-        "retentionInDays": 30
+        "retentionInDays": "[parameters('retentionInDays')]",
+        "features": {
+          "enableLogAccessUsingOnlyResourcePermissions": true
+        },
+        "workspaceCapping": {
+          "dailyQuotaGb": "[parameters('dailyQuotaGb')]"
+        }
       }
     },
     {
       "type": "Microsoft.OperationsManagement/solutions",
       "apiVersion": "2015-11-01-preview",
-      "name": "[concat('SecurityInsights', '(', variables('lawName'), ')')]",
+      "name": "[variables('sentinelSolutionName')]",
       "location": "[parameters('location')]",
-      "tags": "[parameters('tags')]",
       "dependsOn": [
-        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('lawName'))]"
+        "[variables('workspaceResourceId')]"
       ],
       "properties": {
-        "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('lawName'))]"
+        "workspaceResourceId": "[variables('workspaceResourceId')]"
       },
       "plan": {
-        "name": "[concat('SecurityInsights', '(', variables('lawName'), ')')]",
+        "name": "[variables('sentinelSolutionName')]",
         "publisher": "Microsoft",
         "product": "OMSGallery/SecurityInsights",
         "promotionCode": ""
@@ -67,40 +75,63 @@
     },
     {
       "type": "Microsoft.OperationalInsights/workspaces/providers/onboardingStates",
-      "apiVersion": "2021-03-01-preview",
-      "name": "[concat(variables('lawName'), '/Microsoft.SecurityInsights/default')]",
-      "location": "[parameters('location')]",
+      "apiVersion": "2022-09-01-preview",
+      "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/default')]",
       "dependsOn": [
-        "[resourceId('Microsoft.OperationsManagement/solutions', concat('SecurityInsights', '(', variables('lawName'), ')'))]"
+        "[resourceId('Microsoft.OperationsManagement/solutions', variables('sentinelSolutionName'))]"
       ],
       "properties": {}
     },
     {
+      "comments": "Microsoft 365 Defender (XDR)",
       "type": "Microsoft.OperationalInsights/workspaces/providers/dataConnectors",
-      "apiVersion": "2021-03-01-preview",
-      "name": "[concat(variables('lawName'),'/Microsoft.SecurityInsights/MicrosoftThreatProtection')]",
+      "apiVersion": "2023-02-01-preview",
+      "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', guid('M365Defender', parameters('workspaceName')))]",
       "location": "[parameters('location')]",
       "kind": "MicrosoftThreatProtection",
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'default')]"
+      ],
       "properties": {
         "tenantId": "[subscription().tenantId]",
         "dataTypes": {
           "incidents": {
             "state": "enabled"
+          },
+          "alerts": {
+            "state": "enabled"
           }
         }
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', variables('lawName'), 'Microsoft.SecurityInsights', 'default')]"
-      ]
+      }
     },
     {
+      "comments": "Azure Active Directory Identity Protection",
       "type": "Microsoft.OperationalInsights/workspaces/providers/dataConnectors",
-      "apiVersion": "2021-03-01-preview",
-      "name": "[concat(variables('lawName'), '/Microsoft.SecurityInsights/office-365')]",
-      "kind": "Office365",
+      "apiVersion": "2023-02-01-preview",
+      "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', guid('AADIdentityProtection', parameters('workspaceName')))]",
       "location": "[parameters('location')]",
+      "kind": "AzureActiveDirectory",
       "dependsOn": [
-        "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', variables('lawName'), 'Microsoft.SecurityInsights', 'default')]"
+        "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'default')]"
+      ],
+      "properties": {
+        "tenantId": "[subscription().tenantId]",
+        "dataTypes": {
+          "alerts": {
+            "state": "enabled"
+          }
+        }
+      }
+    },
+    {
+      "comments": "Office 365",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/dataConnectors",
+      "apiVersion": "2023-02-01-preview",
+      "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', guid('Office365', parameters('workspaceName')))]",
+      "location": "[parameters('location')]",
+      "kind": "Office365",
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'default')]"
       ],
       "properties": {
         "tenantId": "[subscription().tenantId]",
@@ -118,48 +149,206 @@
       }
     },
     {
+      "comments": "Microsoft Defender for Cloud",
       "type": "Microsoft.OperationalInsights/workspaces/providers/dataConnectors",
-      "apiVersion": "2021-03-01-preview",
-      "name": "[concat(variables('lawName'),'/Microsoft.SecurityInsights/AzureActiveDirectory')]",
+      "apiVersion": "2023-02-01-preview",
+      "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', guid('DefenderForCloud', parameters('workspaceName')))]",
       "location": "[parameters('location')]",
-      "kind": "AzureActiveDirectory",
+      "kind": "AzureSecurityCenter",
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'default')]"
+      ],
+      "properties": {
+        "subscriptionId": "[subscription().subscriptionId]",
+        "dataTypes": {
+          "alerts": {
+            "state": "enabled"
+          }
+        }
+      }
+    },
+    {
+      "comments": "Microsoft Defender for IoT",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/dataConnectors",
+      "apiVersion": "2023-02-01-preview",
+      "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', guid('IoTSecurity', parameters('workspaceName')))]",
+      "location": "[parameters('location')]",
+      "kind": "IOT",
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'default')]"
+      ],
+      "properties": {
+        "subscriptionId": "[subscription().subscriptionId]",
+        "dataTypes": {
+          "alerts": {
+            "state": "enabled"
+          }
+        }
+      }
+    },
+    {
+      "comments": "Threat Intelligence Platforms",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/dataConnectors",
+      "apiVersion": "2023-02-01-preview",
+      "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', guid('ThreatIntelligence', parameters('workspaceName')))]",
+      "location": "[parameters('location')]",
+      "kind": "ThreatIntelligence",
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'default')]"
+      ],
+      "properties": {
+        "tenantId": "[subscription().tenantId]",
+        "dataTypes": {
+          "indicators": {
+            "state": "enabled"
+          }
+        }
+      }
+    },
+    {
+      "comments": "Microsoft Insider Risk Management",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/dataConnectors",
+      "apiVersion": "2023-02-01-preview",
+      "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', guid('OfficeIRM', parameters('workspaceName')))]",
+      "location": "[parameters('location')]",
+      "kind": "OfficeIRM",
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'default')]"
+      ],
       "properties": {
         "tenantId": "[subscription().tenantId]",
         "dataTypes": {
           "alerts": {
             "state": "enabled"
-          },
-          "signin": {
-            "state": "enabled"
-          },
-          "auditLogs": {
+          }
+        }
+      }
+    },
+    {
+      "comments": "Microsoft Power BI",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/dataConnectors",
+      "apiVersion": "2023-02-01-preview",
+      "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/', guid('OfficePowerBI', parameters('workspaceName')))]",
+      "location": "[parameters('location')]",
+      "kind": "OfficePowerBI",
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'default')]"
+      ],
+      "properties": {
+        "tenantId": "[subscription().tenantId]",
+        "dataTypes": {
+          "logs": {
             "state": "enabled"
           }
         }
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', variables('lawName'), 'Microsoft.SecurityInsights', 'default')]"
-      ]
+      }
     },
     {
+      "comments": "Azure Activity Logs",
       "type": "Microsoft.OperationalInsights/workspaces/dataSources",
       "apiVersion": "2020-08-01",
-      "name": "[concat(variables('lawName'), '/subscription-', subscription().subscriptionId)]",
-      "dependsOn": [
-        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('lawName'))]"
-      ],
+      "name": "[concat(parameters('workspaceName'), '/AzureActivity')]",
       "kind": "AzureActivityLog",
+      "dependsOn": [
+        "[variables('workspaceResourceId')]"
+      ],
       "properties": {
-        "linkedResourceId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/microsoft.insights/eventtypes/management')]"
+        "linkedResourceId": "[concat(subscription().id, '/providers/microsoft.insights/eventtypes/management')]"
+      }
+    },
+    {
+      "comments": "Security Events via AMA",
+      "type": "Microsoft.OperationalInsights/workspaces/dataSources",
+      "apiVersion": "2020-08-01",
+      "name": "[concat(parameters('workspaceName'), '/SecurityInsightsSecurityEventCollectionConfiguration')]",
+      "kind": "SecurityInsightsSecurityEventCollectionConfiguration",
+      "dependsOn": [
+        "[variables('workspaceResourceId')]"
+      ],
+      "properties": {
+        "tier": "All",
+        "tierSetMethod": "Custom"
+      }
+    },
+    {
+      "comments": "Enable Entity Analytics",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/settings",
+      "apiVersion": "2023-02-01-preview",
+      "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/EntityAnalytics')]",
+      "kind": "EntityAnalytics",
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'default')]"
+      ],
+      "properties": {
+        "entityProviders": [
+          "AzureActiveDirectory"
+        ]
+      }
+    },
+    {
+      "comments": "Enable UEBA",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/settings",
+      "apiVersion": "2023-02-01-preview",
+      "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/Ueba')]",
+      "kind": "Ueba",
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces/providers/onboardingStates', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'default')]",
+        "[resourceId('Microsoft.OperationalInsights/workspaces/providers/settings', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'EntityAnalytics')]"
+      ],
+      "properties": {
+        "dataSources": [
+          "AuditLogs",
+          "AzureActivity", 
+          "SecurityEvent",
+          "SigninLogs"
+        ]
       }
     }
   ],
   "outputs": {
-    "sentinelWorkspaceId": {
+    "workspaceId": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', variables('lawName'))).customerId]",
-      "metadata": {
-        "description": "Workspace ID for Azure Sentinel"
+      "value": "[reference(variables('workspaceResourceId'), '2022-10-01').customerId]"
+    },
+    "workspaceName": {
+      "type": "string",
+      "value": "[parameters('workspaceName')]"
+    },
+    "workspaceResourceId": {
+      "type": "string",
+      "value": "[variables('workspaceResourceId')]"
+    },
+    "dataConnectorsEnabled": {
+      "type": "array",
+      "value": [
+        "Microsoft 365 Defender (XDR) - Incidents and Alerts",
+        "Azure Active Directory Identity Protection",
+        "Office 365 (Exchange, SharePoint, Teams)",
+        "Microsoft Defender for Cloud",
+        "Microsoft Defender for IoT",
+        "Threat Intelligence Platforms",
+        "Microsoft Insider Risk Management",
+        "Microsoft Power BI",
+        "Azure Activity Logs",
+        "Security Events (Windows)"
+      ]
+    },
+    "additionalFeatures": {
+      "type": "array",
+      "value": [
+        "Entity Analytics - Azure AD only (Active Directory requires domain controller onboarding)",
+        "UEBA (User and Entity Behavior Analytics) - Enabled after Entity Analytics"
+      ]
+    },
+    "nextSteps": {
+      "type": "object",
+      "value": {
+        "step1": "Configure Azure AD diagnostic settings to send SignInLogs and AuditLogs to this workspace",
+        "step2": "Deploy Azure Monitor Agent on VMs to collect Security Events",
+        "step3": "Enable Analytics Rules from Templates in Sentinel portal",
+        "step4": "For TAXII feeds, configure manually in portal after deployment",
+        "step5": "For Active Directory Entity Analytics, onboard domain controllers first",
+        "step6": "Set up Automation Rules and Playbooks for incident response"
       }
     }
   }
